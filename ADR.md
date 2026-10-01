@@ -26,3 +26,39 @@ Decision: Organize the backend into separate Trip Planning and Expense Tracking 
 Alternatives considered: A single trip-management module containing both planning and expense functionality was considered, but it was rejected because it would make the two responsibilities more tightly coupled and make a future transition to separate services more difficult.
 
 Consequences: The project will have slightly more structure than a single-module application, but the separation makes responsibilities clearer and supports the assignment's future microservice decomposition.
+
+
+## [3]. Associate Expenses with Trips
+
+### Status
+Accepted
+
+### Context
+
+The StudyTrip Planner needs to track expenses for individual trips.
+A user may have multiple trips and each trip may contain many expenses.
+
+We need a way to associate each expense with the trip it belongs to while
+keeping the trip and expense domains separately organized.
+
+### Decision
+
+Each expense will store a `trip_id` that references the corresponding trip.
+
+The database will enforce this relationship through a foreign key.
+
+The expense model will therefore contain `trip_id`, while expense-specific
+logic will remain inside the expense domain.
+
+### Consequences
+
+This allows:
+
+- Multiple expenses to belong to one trip.
+- Expenses to be retrieved for a specific trip.
+- Trip and expense functionality to remain separated.
+- The database to maintain the relationship between trips and expenses.
+
+The tradeoff is that expense operations need to know the associated trip ID,
+and database queries involving both domains may require joins or multiple
+queries.

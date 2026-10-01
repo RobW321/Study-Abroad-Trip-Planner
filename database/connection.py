@@ -20,5 +20,16 @@ def initialize_database():
         )
     """)
 
+    connection.execute("""
+    CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        trip_id INTEGER NOT NULL,
+        description TEXT NOT NULL,
+        amount REAL NOT NULL,
+        category TEXT NOT NULL,
+        FOREIGN KEY (trip_id) REFERENCES trips(id)
+    )
+""")
+
     connection.commit()
     connection.close()

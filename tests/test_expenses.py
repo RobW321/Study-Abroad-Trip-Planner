@@ -164,6 +164,23 @@ def test_update_expense():
     assert updated.description == "Restaurant dinner"
     assert updated.amount == 35
 
+def test_update_expense_rejects_negative_amount():
+    trip = create_test_trip()
+
+    expense = create_expense(
+        Expense(
+            trip_id=trip.id,
+            description="Dinner",
+            amount=25,
+            category="Food",
+        )
+    )
+
+    expense.amount = -10
+
+    with pytest.raises(ValueError):
+        update_expense(expense)
+
 
 def test_delete_expense():
     trip = create_test_trip()

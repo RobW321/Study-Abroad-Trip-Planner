@@ -77,3 +77,32 @@ Decision: Use pytest to test the trip and expense domains, database initializati
 Alternatives considered: Attempting to achieve 100% coverage across the entire application was considered, but rejected because coverage percentage alone does not guarantee meaningful tests. Prioritizing every Flask route equally was also rejected because the core domain and data logic provide greater value to test at this stage.
 
 Consequences: The core application logic has strong automated test coverage and exceeds the required 70% target. Flask application routing in `app.py` remains thinner because the project prioritizes domain and data behavior over exhaustive framework-level testing. Additional route tests could be added if the application grows.
+
+
+**## [5]. Deliberately Exclude User Authentication**
+
+Date: 2026-10-03
+
+Status: Decided
+
+Context: A production trip-planning application would typically support
+multiple users and require authentication and authorization. However, the
+assignment focuses on modular feature domains, data modeling, automated
+testing, and designing a monolithic application that could later be
+decomposed into services. Authentication would introduce additional
+infrastructure and security concerns that are outside the primary scope of
+the project.
+
+Decision: Do not implement user authentication or authorization. The
+application will operate as a single-user demonstration application, with
+trips and expenses managed without login or account management.
+
+Alternatives considered: Implementing username/password authentication or
+token-based authentication was considered, but rejected because it would
+increase implementation complexity without materially improving the core
+feature domains required by the assignment.
+
+Consequences: The application has a smaller and more focused scope and avoids
+introducing unnecessary authentication infrastructure. The tradeoff is that
+the application is not designed for multiple users or production deployment
+where user-specific data and access control would be required.

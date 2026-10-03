@@ -99,3 +99,15 @@ def test_delete_trip():
     delete_trip(trip.id)
 
     assert get_trip(trip.id) is None
+
+
+def test_get_nonexistent_trip():
+    trip = get_trip(99999)
+
+    assert trip is None
+
+
+def test_delete_nonexistent_trip():
+    delete_trip(99999)
+
+    assert get_trip(99999) is None

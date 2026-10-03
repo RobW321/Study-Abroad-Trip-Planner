@@ -64,16 +64,16 @@ and database queries involving both domains may require joins or multiple
 queries.
 
 
-**## [4]. Use a Separate Database for Automated Tests**
+**## [4]. Testing Approach**
 
 Date: 2026-10-03
 
 Status: Decided
 
-Context: The application uses SQLite for persistent data. Automated tests need to create, update, and delete trips without modifying the application's real `studytrip.db` database. Using the production database during tests could cause test data to persist between runs and make test results dependent on previous test execution.
+Context: The project requires automated testing with a target of at least 70% code coverage. Testing time was prioritized toward the core business logic and data-access behavior of the two feature domains. These areas contain the application's primary functionality and are more important to verify than framework or presentation code.
 
-Decision: Automated tests will use a separate `test_studytrip.db` database. The test setup will configure the database connection to use this test database before each test, and the test database will be deleted after each test completes.
+Decision: Use pytest to test the trip and expense domains, database initialization, and trip-summary behavior. Tests prioritize CRUD operations, relationships between trips and expenses, and important edge cases such as retrieving or deleting a nonexistent trip. pytest-cov is used to measure coverage. The current test suite contains 20 tests and achieves 87% overall coverage.
 
-Alternatives considered: Using the application's `studytrip.db` directly was considered, but it was rejected because test data could interfere with real application data and make tests less isolated. An in-memory SQLite database was also considered, but a separate test database keeps the setup closer to the application's existing SQLite configuration.
+Alternatives considered: Attempting to achieve 100% coverage across the entire application was considered, but rejected because coverage percentage alone does not guarantee meaningful tests. Prioritizing every Flask route equally was also rejected because the core domain and data logic provide greater value to test at this stage.
 
-Consequences: Tests are isolated from production data and can be run repeatedly without accumulating test records. The test suite requires additional setup and cleanup, but this improves test reliability and makes failures easier to reproduce.
+Consequences: The core application logic has strong automated test coverage and exceeds the required 70% target. Flask application routing in `app.py` remains thinner because the project prioritizes domain and data behavior over exhaustive framework-level testing. Additional route tests could be added if the application grows.

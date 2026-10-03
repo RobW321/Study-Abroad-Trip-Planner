@@ -62,3 +62,18 @@ This allows:
 The tradeoff is that expense operations need to know the associated trip ID,
 and database queries involving both domains may require joins or multiple
 queries.
+
+
+**## [4]. Use a Separate Database for Automated Tests**
+
+Date: 2026-10-03
+
+Status: Decided
+
+Context: The application uses SQLite for persistent data. Automated tests need to create, update, and delete trips without modifying the application's real `studytrip.db` database. Using the production database during tests could cause test data to persist between runs and make test results dependent on previous test execution.
+
+Decision: Automated tests will use a separate `test_studytrip.db` database. The test setup will configure the database connection to use this test database before each test, and the test database will be deleted after each test completes.
+
+Alternatives considered: Using the application's `studytrip.db` directly was considered, but it was rejected because test data could interfere with real application data and make tests less isolated. An in-memory SQLite database was also considered, but a separate test database keeps the setup closer to the application's existing SQLite configuration.
+
+Consequences: Tests are isolated from production data and can be run repeatedly without accumulating test records. The test suite requires additional setup and cleanup, but this improves test reliability and makes failures easier to reproduce.

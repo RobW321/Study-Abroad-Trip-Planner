@@ -1,3 +1,6 @@
+import os
+from database import connection
+
 from database.connection import initialize_database
 from trips.model import Trip
 from trips.service import (
@@ -9,8 +12,17 @@ from trips.service import (
 )
 
 
+TEST_DATABASE = "test_studytrip.db"
+
+
 def setup_function():
+    connection.DATABASE_NAME = TEST_DATABASE
     initialize_database()
+
+
+def teardown_function():
+    if os.path.exists(TEST_DATABASE):
+        os.remove(TEST_DATABASE)
 
 
 def test_create_and_get_trip():

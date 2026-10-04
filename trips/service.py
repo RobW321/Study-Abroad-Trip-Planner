@@ -7,10 +7,18 @@ def create_trip(trip):
 
     cursor = connection.execute(
         """
-        INSERT INTO trips (name, destination, start_date, end_date)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO trips (
+            name, destination, start_date, end_date, planned_budget
+        )
+        VALUES (?, ?, ?, ?, ?)
         """,
-        (trip.name, trip.destination, trip.start_date, trip.end_date),
+        (
+            trip.name,
+            trip.destination,
+            trip.start_date,
+            trip.end_date,
+            trip.planned_budget,
+        ),
     )
 
     connection.commit()
@@ -26,7 +34,7 @@ def get_trip(trip_id):
 
     row = connection.execute(
         """
-        SELECT id, name, destination, start_date, end_date
+        SELECT id, name, destination, start_date, end_date, planned_budget
         FROM trips
         WHERE id = ?
         """,
@@ -44,6 +52,7 @@ def get_trip(trip_id):
         destination=row[2],
         start_date=row[3],
         end_date=row[4],
+        planned_budget=row[5],
     )
 
 
@@ -52,7 +61,7 @@ def get_all_trips():
 
     rows = connection.execute(
         """
-        SELECT id, name, destination, start_date, end_date
+        SELECT id, name, destination, start_date, end_date, planned_budget
         FROM trips
         """
     ).fetchall()
@@ -66,6 +75,7 @@ def get_all_trips():
             destination=row[2],
             start_date=row[3],
             end_date=row[4],
+            planned_budget=row[5],
         )
         for row in rows
     ]
@@ -77,7 +87,8 @@ def update_trip(trip):
     connection.execute(
         """
         UPDATE trips
-        SET name = ?, destination = ?, start_date = ?, end_date = ?
+        SET name = ?, destination = ?, start_date = ?, end_date = ?,
+            planned_budget = ?
         WHERE id = ?
         """,
         (
@@ -85,6 +96,7 @@ def update_trip(trip):
             trip.destination,
             trip.start_date,
             trip.end_date,
+            trip.planned_budget,
             trip.id,
         ),
     )

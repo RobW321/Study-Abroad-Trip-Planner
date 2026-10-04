@@ -1,3 +1,9 @@
+import os
+
+from database import connection
+from database.connection import initialize_database
+
+
 from trips.model import Trip
 from expenses.model import Expense
 from trips.service import create_trip
@@ -8,6 +14,29 @@ from application.trip_summary import (
     get_trip_summary,
 )
 
+TEST_DATABASE = "test_studytrip.db"
+
+
+def create_test_trip():
+    return create_trip(
+        Trip(
+            name="Budget Test Trip",
+            destination="Madrid",
+            start_date="2026-10-01",
+            end_date="2026-10-07",
+            planned_budget=5000.00,
+        )
+    )
+
+def setup_function():
+    connection.DATABASE_NAME = TEST_DATABASE
+    initialize_database()
+
+
+def teardown_function():
+    if os.path.exists(TEST_DATABASE):
+        os.remove(TEST_DATABASE)
+
 
 def test_get_trip_expenses():
     trip = create_trip(
@@ -16,6 +45,7 @@ def test_get_trip_expenses():
             destination="Madrid",
             start_date="2026-10-01",
             end_date="2026-10-07",
+            planned_budget=1000.00,
         )
     )
 
@@ -49,6 +79,7 @@ def test_get_total_expenses():
             destination="Paris",
             start_date="2026-10-10",
             end_date="2026-10-12",
+            planned_budget=800.00,
         )
     )
 
@@ -80,6 +111,7 @@ def test_get_trip_summary():
             destination="Rome",
             start_date="2026-11-01",
             end_date="2026-11-05",
+            planned_budget=1200.00,
         )
     )
 
@@ -97,3 +129,20 @@ def test_get_trip_summary():
     assert summary["trip"].id == trip.id
     assert len(summary["expenses"]) == 1
     assert summary["total_expenses"] == 20.00
+
+def test_trip_summary_calculates_remaining_budget():
+    trip = create_test_trip()
+
+    create_expense(
+        Expense(
+            trip_id=trip.id,
+            description="Hotel",
+            amount=1200.00,
+            category="Lodging",
+        )
+    )
+
+    summary = get_trip_summary(trip.id)
+
+    assert summary["total_expenses"] == 1200.00
+    assert summary["remaining_budget"] == 3800.00

@@ -11,14 +11,15 @@ def initialize_database():
     connection = get_connection()
 
     connection.execute("""
-        CREATE TABLE IF NOT EXISTS trips (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            destination TEXT NOT NULL,
-            start_date TEXT NOT NULL,
-            end_date TEXT NOT NULL
-        )
-    """)
+    CREATE TABLE IF NOT EXISTS trips (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        destination TEXT NOT NULL,
+        start_date TEXT NOT NULL,
+        end_date TEXT NOT NULL,
+        planned_budget REAL NOT NULL
+    )
+""")
 
     connection.execute("""
     CREATE TABLE IF NOT EXISTS expenses (

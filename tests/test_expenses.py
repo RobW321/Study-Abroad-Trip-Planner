@@ -1,5 +1,6 @@
 import pytest
 
+from database import connection
 from database.connection import get_connection, initialize_database
 from expenses.model import Expense
 from expenses.service import (
@@ -13,17 +14,21 @@ from expenses.service import (
 from trips.model import Trip
 from trips.service import create_trip
 
+TEST_DATABASE = "test_studytrip.db"
+
 
 def setup_function():
-    connection = get_connection()
-
-    connection.execute("DELETE FROM expenses")
-    connection.execute("DELETE FROM trips")
-
-    connection.commit()
-    connection.close()
+    connection.DATABASE_NAME = TEST_DATABASE
 
     initialize_database()
+
+    db_connection = get_connection()
+
+    db_connection.execute("DELETE FROM expenses")
+    db_connection.execute("DELETE FROM trips")
+
+    db_connection.commit()
+    db_connection.close()
 
 
 def create_test_trip():
@@ -33,6 +38,7 @@ def create_test_trip():
             destination="Madrid",
             start_date="2026-08-31",
             end_date="2026-12-18",
+            planned_budget=5000.00,
         )
     )
 

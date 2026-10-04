@@ -19,9 +19,11 @@ def get_trip_summary(trip_id):
 
     expenses = get_expenses_for_trip(trip_id)
     total_expenses = sum(expense.amount for expense in expenses)
+    remaining_budget = trip.planned_budget - total_expenses
 
     return {
         "trip": trip,
         "expenses": expenses,
         "total_expenses": total_expenses,
+        "remaining_budget": remaining_budget,
     }

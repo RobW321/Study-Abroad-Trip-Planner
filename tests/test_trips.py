@@ -31,6 +31,7 @@ def test_create_and_get_trip():
         destination="Madrid",
         start_date="2026-08-31",
         end_date="2026-12-18",
+        planned_budget=5000.00,
     )
 
     created_trip = create_trip(trip)
@@ -39,6 +40,7 @@ def test_create_and_get_trip():
     assert created_trip.id is not None
     assert retrieved_trip.name == "Spain Study Abroad"
     assert retrieved_trip.destination == "Madrid"
+    assert retrieved_trip.planned_budget == 5000.00
 
 
 def test_get_all_trips():
@@ -48,6 +50,7 @@ def test_get_all_trips():
             destination="Madrid",
             start_date="2026-08-31",
             end_date="2026-12-18",
+            planned_budget=1000.00,
         )
     )
 
@@ -57,6 +60,7 @@ def test_get_all_trips():
             destination="Lisbon",
             start_date="2026-09-18",
             end_date="2026-09-21",
+            planned_budget=800.00,
         )
     )
 
@@ -72,11 +76,13 @@ def test_update_trip():
             destination="Madrid",
             start_date="2026-08-31",
             end_date="2026-12-18",
+            planned_budget=1000.00,
         )
     )
 
     trip.name = "Updated Spain Trip"
     trip.destination = "Barcelona"
+    trip.planned_budget = 1200.00
 
     update_trip(trip)
 
@@ -84,6 +90,7 @@ def test_update_trip():
 
     assert updated_trip.name == "Updated Spain Trip"
     assert updated_trip.destination == "Barcelona"
+    assert updated_trip.planned_budget == 1200.00
 
 
 def test_delete_trip():
@@ -93,6 +100,7 @@ def test_delete_trip():
             destination="Paris",
             start_date="2026-10-01",
             end_date="2026-10-05",
+            planned_budget=500.00,
         )
     )
 

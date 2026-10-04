@@ -4,303 +4,211 @@ This document records meaningful uses of AI assistance during development of the
 
 ---
 
-## 1. Project Scope and Architecture
+## 1. SQLite Setup
 
-**Date:** 2026-09-XX
-**Purpose:** Define the application scope and identify two genuinely distinct backend feature domains.
+**Commit:** fe17fed
+**Tool:** ChatGPT
 
-**AI Contribution:**
+**Prompt**
 
-* Helped evaluate the proposed study-abroad trip planner against the assignment requirement for two distinct backend feature domains.
-* Suggested separating the application into:
+Help set up the SQLite database and Trip model for the Study-Abroad-Trip-Planner.
 
-  * Trip Planning
-  * Expense Tracking
-* Helped establish a meaningful reason for the domains to interact through trip spending summaries.
+**Disposition**
 
-**Developer Action / Verification:**
+Accepted
 
-* Reviewed the proposed architecture.
-* Chose the final domain boundaries and application purpose.
-* Implemented the architecture independently in the project.
+**What changed and why (if modified):** 
 
-**Result:** Established the two-domain project scope.
+The suggested structure was adapted to the project's existing package organization.
 
----
+**How this works (in my own words)** 
 
-## 2. Flask and SQLite Setup
-
-**Date:** 2026-09-XX
-**Purpose:** Establish the initial backend structure and persistence layer.
-
-**AI Contribution:**
-
-* Provided guidance on structuring the Flask/Python application.
-* Discussed using SQLite for persistence.
-* Suggested separating database connection logic from domain services.
-
-**Developer Action / Verification:**
-
-* Created the project structure.
-* Implemented the database connection and initialization logic.
-* Created the initial SQLite schema.
-* Ran the application and verified that the database initialized correctly.
-
-**Result:** Established the initial backend and SQLite persistence layer.
+The Trip model represents a trip as an object with fields such sa name, destination, and dates. 
+The database connection module creates the SQLite database and manages it. 
 
 ---
 
-## 3. Trip Domain Implementation
+## 2. CRUD Operations
 
-**Date:** 2026-09-XX
-**Purpose:** Implement the Trip Planning domain.
+**Commit:** 64071cc
+**Tool:** ChatGPT
 
-**AI Contribution:**
+**Prompt**
 
-* Assisted with designing the `Trip` model.
-* Provided guidance for implementing CRUD service operations.
-* Helped reason through how the service layer should interact with SQLite.
+Help implement CRUD operations and tests for trips
 
-**Developer Action / Verification:**
+**Disposition**
 
-* Implemented the Trip model.
-* Implemented create, read, update, and delete operations.
-* Tested the operations using pytest.
-* Manually verified the application behavior.
+Modified
 
-**Result:** Completed the Trip Planning domain.
+**What changed and why (if modified):** 
 
----
+The approach was adapted to the project's service layer structure and the tests were modified to have more coverage.
 
-## 4. Expense Domain Design and Implementation
+**How this works (in my own words)** 
 
-**Date:** 2026-09-XX
-**Purpose:** Add a second backend domain with a meaningful relationship to trips.
-
-**AI Contribution:**
-
-* Helped determine how Expense Tracking could function as a distinct feature domain.
-* Suggested associating each expense with a trip using `trip_id`.
-* Helped reason about validation and the requirement that an expense reference an existing trip.
-
-**Developer Action / Verification:**
-
-* Created the Expense model.
-* Implemented expense CRUD operations.
-* Added expense validation.
-* Implemented the trip relationship using `trip_id`.
-* Tested the expense functionality.
-
-**Result:** Completed the Expense Tracking domain while maintaining separation from Trip Planning.
+The trip service performs create, read, update, and delete operations by executing the SQL queries that are in the parameters against the SQLite. After that, it converts the database rows into Trip objects.
 
 ---
 
-## 5. Application-Layer Integration
+## 3. Expense Domain Design and Implementation
 
-**Date:** 2026-09-XX
-**Purpose:** Give the two domains a meaningful cross-domain purpose.
+**Commit:** 33cd64f
+**Tool:** ChatGPT
 
-**AI Contribution:**
+**Prompt**
 
-* Helped design an application service that combines trip information with its associated expenses.
-* Suggested calculating total spending in the application layer rather than coupling the two domain services.
-* Helped define the trip summary workflow.
+Help establish the expense domain separately from the Trip domain
 
-**Developer Action / Verification:**
+**Disposition**
 
-* Implemented `application/trip_summary.py`.
-* Connected the Trip and Expense services through the application layer.
-* Wrote tests for trip summaries and expense totals.
-* Verified that expenses were correctly associated with the selected trip.
+Modified
 
-**Result:** Created meaningful cross-domain functionality rather than two unrelated CRUD modules.
+**What changed and why (if modified):** 
 
----
+Organized the expense domain into its own model and service modules. 
 
-## 6. Testing Strategy
+**How this works (in my own words)** 
 
-**Date:** 2026-09-XX
-**Purpose:** Establish a testing strategy that prioritizes the core backend behavior.
-
-**AI Contribution:**
-
-* Recommended prioritizing tests around:
-
-  * Trip Planning
-  * Expense Tracking
-  * Database behavior
-  * Domain relationships
-  * Application-layer functionality
-* Recommended avoiding artificial efforts to maximize coverage of CLI input/output code.
-
-**Developer Action / Verification:**
-
-* Implemented pytest tests across the project.
-* Ran the complete test suite with coverage.
-* Reviewed uncovered code and determined that the CLI layer did not require exhaustive testing.
-
-**Result:** Reached 20 passing tests and 87% overall code coverage.
+The Expenses domain represents the actual spending that is done and reference a trip through the trip_id field. 
+By keeping the model separate from the service, we prevent the Trip domain owning info that should be expense-specific. 
 
 ---
 
-## 7. Test Isolation
+## 4. Expense CRUD Operations
 
-**Date:** 2026-09-XX
-**Purpose:** Prevent tests from modifying the production SQLite database.
+**Commit:** 86e8200
+**Tool:** ChatGPT
 
-**AI Contribution:**
+**Prompt**
 
-* Identified the importance of isolating tests from the application's `studytrip.db`.
-* Suggested using a separate test database during trip tests.
-* Helped design setup and teardown behavior for the test database.
+Help implement expense CRUD operations and testing.
 
-**Developer Action / Verification:**
+**Disposition**
 
-* Updated test setup to use `test_studytrip.db`.
-* Added teardown logic to remove the test database after each test.
-* Ran the test suite and verified that tests passed without relying on production data.
+Modified
 
-**Result:** Improved test isolation and prevented test data from polluting the application database.
+**What changed and why (if modified):** 
 
----
+The implementation was adjusted to match the project's validation rules and database structure.
 
-## 8. Edge-Case Testing
+**How this works (in my own words)** 
 
-**Date:** 2026-09-XX
-**Purpose:** Increase confidence in error handling beyond normal CRUD operations.
-
-**AI Contribution:**
-
-* Suggested testing nonexistent trips and other invalid domain scenarios.
-* Helped identify cases that should return `None` or raise `ValueError`.
-
-**Developer Action / Verification:**
-
-* Added edge-case tests for nonexistent trip operations and domain validation.
-* Executed the tests and verified the expected behavior.
-
-**Result:** Increased confidence in error handling and contributed to the 87% overall coverage result.
+The Expense CRUD SQL operations through the expense service. 
+We add additional testing to prevent invalid amounts and check for required fields that may be missing.
 
 ---
 
-## 9. Architecture Decision Record
+## 5. Trip and Expense Applications
 
-**Date:** 2026-09-XX
-**Purpose:** Document the project's major architectural decisions.
+**Commit:** 6e281da
+**Tool:** ChatGPT
 
-**AI Contribution:**
+**Prompt**
 
-* Helped organize the required ADR entries around:
+Help create an application service that combines trip and expense information.
 
-  1. Backend language/framework choice
-  2. Independent feature-domain boundaries
-  3. SQLite schema and data-model decisions
-  4. Testing approach
-  5. A deliberately excluded feature
-* Helped clarify how the architecture supports potential future service extraction.
+**Disposition**
 
-**Developer Action / Verification:**
+Modified
 
-* Reviewed each architectural decision.
-* Made the final decisions about Flask, domain separation, SQLite relationships, testing priorities, and scope exclusions.
-* Wrote and finalized `ADR.md`.
+**What changed and why (if modified):** 
 
-**Result:** Documented the project's major architectural decisions and deliberate scope limitations.
+The application service was kept separate from the domain services.
+
+**How this works (in my own words)** 
+
+The application layer calls both domain services and combines their results.
+This allows the Trip and Expense domains to remain separately responsible for their own data.
 
 ---
 
-## 10. Final Integration Validation
+## 6. Trip Test Isolation
 
-**Date:** 2026-10-04
-**Purpose:** Validate the complete application workflow before submission.
+**Commit:** 7929a36
+**Tool:** ChatGPT
 
-**AI Contribution:**
+**Prompt**
 
-* Reviewed the final application flow.
+Help isolate trip tests from the application database.
 
-* Recommended validating the complete workflow:
+**Disposition**
 
-  `Trip → Expenses → Summary → Dashboard`
+Modified
 
-* Recommended testing both valid and invalid user input.
+**What changed and why (if modified):** 
 
-**Developer Action / Verification:**
+Tests were changed to use a separate test database rather than modifying the real SQLite database.
 
-* Ran `python app.py`.
-* Verified that existing trips were displayed.
-* Selected trips and verified their associated expenses.
-* Verified that total spending was calculated correctly.
-* Tested an invalid trip ID.
-* Tested invalid non-numeric input.
+**How this works (in my own words)** 
 
-**Result:** Confirmed that the integrated application workflow works as intended.
+Each test uses an isolated database so that the test data does not accidentally change the application's real data.
 
 ---
 
-## 11. Repository Cleanup
+## 6. ADR Documentation
 
-**Date:** 2026-10-04
-**Purpose:** Prepare the Git repository for final submission.
+**Commit:** e230987
+**Tool:** ChatGPT
 
-**AI Contribution:**
+**Prompt**
 
-* Helped identify generated coverage output that should not be committed.
-* Recommended adding `.coverage` to `.gitignore`.
-* Identified the stale Git upstream configuration.
+Help update the ADR documentation to explain project decisions and exclusions.
 
-**Developer Action / Verification:**
+**Disposition**
 
-* Added `.coverage` to `.gitignore`.
-* Verified that `studytrip.db` was already ignored.
-* Verified that generated files such as `.coverage`, `.pyc`, `venv`, and `.pytest_cache` were not tracked.
-* Removed the stale upstream configuration.
-* Verified that the working tree was clean.
+Modified
 
-**Result:** Prepared a clean repository containing only the relevant project files.
+**What changed and why (if modified):** 
 
----
+The ADRs were kept to exactly five entries as required by the assignment.
 
-## 12. Project Documentation
+**How this works (in my own words)** 
 
-**Date:** 2026-10-04
-**Purpose:** Document the project for final submission.
-
-**AI Contribution:**
-
-* Assisted in drafting a concise `README.md`.
-* Helped organize documentation covering:
-
-  * Project purpose
-  * Two-domain architecture
-  * Application-layer integration
-  * SQLite schema
-  * Project structure
-  * Running the application
-  * Running tests
-  * Example workflow
-  * Architectural decisions
-
-**Developer Action / Verification:**
-
-* Reviewed the generated documentation.
-* Verified that the documented architecture matched the actual implementation.
-* Added and committed `README.md`.
-
-**Result:** Added documentation explaining how to run, test, and understand the project.
+ADRs are meant to record important decisions and the reasonings behind.
+It allows whoever reviewing the project to understand its architecture.
 
 ---
 
-## Final Verification
+## 7. README File
 
-The final project was manually and automatically verified after development.
+**Commit:** 0a943f0
+**Tool:** ChatGPT
 
-* **20 automated tests passing**
-* **87% overall code coverage**
-* Trip Planning domain implemented and tested
-* Expense Tracking domain implemented and tested
-* Application layer integrates the two domains
-* SQLite persistence implemented
-* README documentation added
-* ADR documentation completed
-* Generated development artifacts excluded from Git
-* Working tree clean
+**Prompt**
+
+Help create a README explaining the project and how to run it.
+
+**Disposition**
+
+Modified
+
+**What changed and why (if modified):** 
+
+The README was adapted to the project's actual commands, structure, and testing process.
+
+**How this works (in my own words)** 
+
+The README provides important setup instructions, explains the project's architecture, and documents how to run and test the application.
+
+---
+
+## 8. Flask API and Planned Budget
+
+**Commit:** b0c5c81
+**Tool:** ChatGPT
+
+**Prompt**
+
+Help convert the interactive application into a Flask application and integrate planned budget for comaprison
+
+**Disposition**
+
+Accepted
+
+**What changed and why (if modified):** 
+
+**How this works (in my own words)** 
+
+Flask creates HTTP routes that call the application's servic layer. PORT is what lets the runtime choose the server port while 0.0.0.0 allows the application to accept connections from outside the local machine.
+As for the plannet budget, a trip stores a planned budget (how much the user expects to spend), while expenses store the actual spending. The application layer subtracts the actual expenses from the planned budget to calculate the remaining budget. 

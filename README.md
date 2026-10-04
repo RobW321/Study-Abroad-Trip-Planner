@@ -1,115 +1,133 @@
-# Study-Abroad Trip Planner
+# Study-Abroad-Trip-Planner
 
-A Flask and SQLite backend application for planning study-abroad trips and tracking actual expenses.
-
+A Flask and SQLite application for planning study-abroad trips and tracking their actual expenses against a planned budget.
 
 ## Overview
 
-The Study-Abroad Trip Planner helps users organize trips and compare their planned trips with their actual spending.
+The Study-Abroad-Trip-Planner is a small monolithic application designed as the foundation for future DevOps work.
 
-The application is intentionally structured around two distinct backend feature domains:
+The application contains two distinct backend domains:
 
-1. **Trip Planning** — manages trip information including the trip name, destination, and dates.
-2. **Expense Tracking** — manages expenses associated with a specific trip, including descriptions, amounts, and categories.
+1. **Trip Planning**
 
-The application layer combines these domains to provide a trip summary showing the expenses and total spending for a selected trip.
+   * Stores trip information.
+   * Stores the planned budget for each trip.
+   * Provides CRUD operations for trips.
 
-This separation allows each domain to be independently modularized and potentially extracted into its own service in a future architecture.
+2. **Expense Tracking**
 
+   * Stores expenses associated with a trip.
+   * Provides CRUD operations for expenses.
+   * Validates expense information.
+
+An application layer combines the two domains to provide a trip summary containing planned budget, actual spending, and remaining budget.
+
+The application currently runs as a single Flask process backed by SQLite.
 
 ## Architecture
 
 ```text
-                    Study Trip Planner
-                           |
-                     Application Layer
-                     /               \
-                    /                 \
-           Trip Planning          Expense Tracking
-                |                       |
-          trips/service.py       expenses/service.py
-                \                       /
-                 \                     /
-                  ------ SQLite -------
+                    Flask API
+                        |
+             +----------+----------+
+             |                     |
+          GET /              GET /trips/<id>
+             |                     |
+       Trip Planning       Application Layer
+             |                     |
+             |              +------+------+
+             |              |             |
+             |        Trip Planning   Expense Tracking
+             |              |             |
+             +--------------+-------------+
+                            |
+                          SQLite
 ```
 
 ### Trip Planning Domain
 
-Responsible for:
+Located in:
 
-* Creating trips
-* Retrieving individual trips
-* Retrieving all trips
-* Updating trips
-* Deleting trips
+```text
+trips/
+    model.py
+    service.py
+```
+
+The Trip domain owns trip information and planned budgets.
 
 ### Expense Tracking Domain
 
-Responsible for:
+Located in:
 
-* Creating expenses
-* Retrieving expenses
-* Retrieving expenses for a trip
-* Updating expenses
-* Deleting expenses
-* Validating expense amounts, descriptions, and categories
-* Ensuring expenses reference an existing trip
+```text
+expenses/
+    model.py
+    service.py
+```
+
+The Expense domain owns actual expense information.
 
 ### Application Layer
 
-`application/trip_summary.py` combines the two domains.
+Located in:
 
-For a selected trip, it retrieves:
+```text
+application/trip_summary.py
+```
 
-* The trip
-* Its associated expenses
-* The total amount spent
+The application layer coordinates the two domains without moving domain-specific database logic into the other domain.
 
-This provides the application's main cross-domain functionality.
+For example:
 
+```text
+Planned budget:   $5,000
+Actual expenses:  $1,200
+Remaining budget: $3,800
+```
 
 ## Database
 
-The application uses SQLite for persistence.
+The application uses SQLite.
 
 The database contains two primary tables:
 
 ### `trips`
 
-| Column        | Type    | Description      |
-| ------------- | ------- | ---------------- |
-| `id`          | INTEGER | Primary key      |
-| `name`        | TEXT    | Trip name        |
-| `destination` | TEXT    | Trip destination |
-| `start_date`  | TEXT    | Trip start date  |
-| `end_date`    | TEXT    | Trip end date    |
+| Column           | Description             |
+| ---------------- | ----------------------- |
+| `id`             | Primary key             |
+| `name`           | Trip name               |
+| `destination`    | Trip destination        |
+| `start_date`     | Trip start date         |
+| `end_date`       | Trip end date           |
+| `planned_budget` | Planned spending budget |
 
 ### `expenses`
 
-| Column        | Type    | Description           |
-| ------------- | ------- | --------------------- |
-| `id`          | INTEGER | Primary key           |
-| `trip_id`     | INTEGER | References `trips.id` |
-| `description` | TEXT    | Expense description   |
-| `amount`      | REAL    | Expense amount        |
-| `category`    | TEXT    | Expense category      |
+| Column        | Description                        |
+| ------------- | ---------------------------------- |
+| `id`          | Primary key                        |
+| `trip_id`     | Foreign key referencing `trips.id` |
+| `description` | Expense description                |
+| `amount`      | Expense amount                     |
+| `category`    | Expense category                   |
 
-Each trip can have multiple expenses through the `trip_id` foreign-key relationship.
-
+Each trip can have multiple expenses.
 
 ## Project Structure
 
 ```text
 Study-Abroad-Trip-Planner/
 ├── application/
+│   ├── __init__.py
 │   └── trip_summary.py
 ├── database/
+│   ├── __init__.py
 │   ├── connection.py
 │   └── db.py
 ├── expenses/
-│   ├── model.py
-│   └── service.py
-├── trips/
+│   ├── __init__.py
 │   ├── model.py
 │   └── service.py
 ├── tests/
@@ -117,81 +135,226 @@ Study-Abroad-Trip-Planner/
 │   ├── test_expenses.py
 │   ├── test_trip_summary.py
 │   └── test_trips.py
-├── app.py
+├── trips/
+│   ├── __init__.py
+│   ├── model.py
+│   └── service.py
 ├── ADR.md
+├── AI_Usage.md
 ├── README.md
+├── app.py
 └── requirements.txt
 ```
 
+## Requirements
 
-## Running the Application
+The application uses:
 
-Create and activate a virtual environment:
+* Python
+* Flask
+* SQLite
+* pytest
+* pytest-cov
 
-```bash
-python -m venv venv
-source venv/bin/activate
-```
-
-Install dependencies:
+Install dependencies with:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Run the application:
+## Running the Application
+
+The application starts with:
 
 ```bash
 python app.py
 ```
 
-The application displays the available trips and allows the user to select a trip to view its expenses and total spending.
+By default, Flask listens on port `5000`.
 
+A different port can be supplied using the `PORT` environment variable:
 
-## Running Tests
+```bash
+PORT=5001 python app.py
+```
 
-Run the test suite with:
+The application binds to:
+
+```text
+0.0.0.0
+```
+
+so it can accept connections from a container or other host.
+
+## Database Location
+
+The SQLite database is stored as:
+
+```text
+studytrip.db
+```
+
+By default it is created in the current directory.
+
+The directory can be configured using the `DATA_DIR` environment variable:
+
+```bash
+DATA_DIR=./data python app.py
+```
+
+The resulting database path is:
+
+```text
+./data/studytrip.db
+```
+
+No external database is required.
+
+## API Endpoints
+
+### Get all trips
+
+```http
+GET /
+```
+
+Example:
+
+```bash
+curl http://localhost:5000/
+```
+
+Example response:
+
+```json
+{
+  "trips": [
+    {
+      "id": 1,
+      "name": "Barcelona Trip",
+      "destination": "Barcelona",
+      "start_date": "2026-10-03",
+      "end_date": "2026-10-05",
+      "planned_budget": 500.0
+    }
+  ]
+}
+```
+
+### Get a trip summary
+
+```http
+GET /trips/<trip_id>
+```
+
+Example:
+
+```bash
+curl http://localhost:5000/trips/1
+```
+
+The response includes:
+
+* Trip information
+* Planned budget
+* Expenses
+* Total actual expenses
+* Remaining budget
+
+For example:
+
+```json
+{
+  "trip": {
+    "id": 1,
+    "name": "Barcelona Trip",
+    "destination": "Barcelona",
+    "start_date": "2026-10-03",
+    "end_date": "2026-10-05",
+    "planned_budget": 500.0
+  },
+  "expenses": [],
+  "total_expenses": 0,
+  "remaining_budget": 500.0
+}
+```
+
+A nonexistent trip returns HTTP `404`.
+
+## Testing
+
+Run the complete test suite:
 
 ```bash
 python -m pytest
 ```
 
-Run tests with coverage:
+The final test suite contains:
+
+```text
+21 passed
+```
+
+Run the test suite with coverage:
 
 ```bash
 python -m pytest --cov=. --cov-report=term-missing
 ```
 
-The current test suite contains **20 passing tests** and provides **87% overall code coverage**.
-
-Testing prioritizes the core backend behavior of the Trip Planning and Expense Tracking domains, database operations, and the application-layer trip summary.
-
-
-## Example Workflow
-
-A typical workflow is:
+The final measured coverage is:
 
 ```text
-Create a trip
-      ↓
-Store trip in SQLite
-      ↓
-Add expenses associated with the trip
-      ↓
-Retrieve the trip and its expenses
-      ↓
-Calculate total spending
-      ↓
-Display the trip summary
+96%
 ```
 
+This exceeds the assignment requirement of at least 70% coverage.
+
+Testing focuses primarily on:
+
+* Trip business logic
+* Expense business logic
+* SQLite database behavior
+* CRUD operations
+* Invalid input and edge cases
+* Cross-domain trip summaries
+* Planned-budget calculations
 
 ## Architecture Decisions
 
-Key architectural decisions are documented in `ADR.md`, including:
+The major architectural decisions are documented in `ADR.md`.
 
-1. The choice of Flask/Python as the backend framework.
-2. The separation of Trip Planning and Expense Tracking into distinct feature domains.
-3. The SQLite schema and trip-expense relationship.
-4. The testing approach and coverage priorities.
-5. The deliberate exclusion of authentication and authorization from the project scope.
+The five required decisions cover:
+
+1. Backend language and framework
+2. Domain boundaries
+3. SQLite schema
+4. Testing approach
+5. A deliberately excluded feature
+
+## AI Usage
+
+AI was used during development for implementation guidance, debugging, architectural discussion, testing, and documentation.
+
+The detailed AI interaction log is available in:
+
+```text
+AI_Usage.md
+```
+
+## Project Scope
+
+This assignment intentionally remains a small monolithic application.
+
+The project does **not** include:
+
+* Docker
+* Docker Compose
+* CI workflows
+* Infrastructure as Code
+* External databases
+* External caches
+* Message brokers
+* Background workers
+* Authentication
+
+These features are outside the scope of this assignment and can be considered in later DevOps work.

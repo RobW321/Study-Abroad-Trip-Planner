@@ -1,9 +1,5 @@
 # AI Usage Log
 
-This document records meaningful uses of AI assistance during development of the Study-Abroad Trip Planner. AI was used as a development aid; implementation decisions, code execution, testing, and verification were performed by the developer.
-
----
-
 ## 1. SQLite Setup
 
 **Commit:** fe17fed

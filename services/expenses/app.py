@@ -33,10 +33,16 @@ def log_request(response):
 
     app.logger.info(
         "%s %s %s %.2fms",
-        request.method,
-        request.path,
-        response.status_code,
-        duration,
+        request.method, request.path, response.status_code, duration,
+    )
+
+    # Allow requests from the local frontend
+    response.headers["Access-Control-Allow-Origin"] = os.environ.get(
+        "UI_ORIGIN", "http://localhost:8080"
+    )
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    response.headers["Access-Control-Allow-Methods"] = (
+        "GET, POST, PUT, DELETE, OPTIONS"
     )
 
     return response

@@ -1,5 +1,19 @@
+import os
+import requests
+
 from database.connection import get_connection
 from .model import Expense
+
+class TripNotFoundError(Exception):
+    pass
+
+
+class TripsServiceUnavailableError(Exception):
+    pass
+
+
+class TripsServiceTimeoutError(Exception):
+    pass
 
 
 def validate_expense(expense):
@@ -13,39 +27,68 @@ def validate_expense(expense):
         raise ValueError("Expense category cannot be empty")
 
 
+
 def create_expense(expense):
     validate_expense(expense)
 
+    # Get the Trips service URL from the environment
+    trips_url = os.environ.get("TRIPS_URL")
+
+    if not trips_url:
+        raise TripsServiceUnavailableError(
+            "Trips service URL is not configured"
+        )
+
+    # Verify that the trip exists through the Trips HTTP API
+    try:
+        response = requests.get(
+            f"{trips_url.rstrip('/')}/trips/{expense.trip_id}",
+            timeout=(2, 5),
+        )
+
+    except requests.exceptions.Timeout:
+        raise TripsServiceTimeoutError(
+            "Trips service request timed out"
+        )
+
+    except requests.exceptions.RequestException:
+        raise TripsServiceUnavailableError(
+            "Unable to communicate with Trips service"
+        )
+
+    if response.status_code == 404:
+        raise TripNotFoundError("Trip does not exist")
+
+    if response.status_code != 200:
+        raise TripsServiceUnavailableError(
+            "Trips service returned an unexpected response"
+        )
+
+    # Trip exists, so create the expense in the Expenses database
     connection = get_connection()
 
-    trip = connection.execute(
-        "SELECT id FROM trips WHERE id = ?",
-        (expense.trip_id,),
-    ).fetchone()
+    try:
+        cursor = connection.execute(
+            """
+            INSERT INTO expenses (trip_id, description, amount, category)
+            VALUES (?, ?, ?, ?)
+            """,
+            (
+                expense.trip_id,
+                expense.description,
+                expense.amount,
+                expense.category,
+            ),
+        )
 
-    if trip is None:
+        connection.commit()
+        expense.id = cursor.lastrowid
+
+    finally:
         connection.close()
-        raise ValueError("Trip does not exist")
-
-    cursor = connection.execute(
-        """
-        INSERT INTO expenses (trip_id, description, amount, category)
-        VALUES (?, ?, ?, ?)
-        """,
-        (
-            expense.trip_id,
-            expense.description,
-            expense.amount,
-            expense.category,
-        ),
-    )
-
-    connection.commit()
-    expense.id = cursor.lastrowid
-
-    connection.close()
 
     return expense
+
 
 
 def get_expense(expense_id):

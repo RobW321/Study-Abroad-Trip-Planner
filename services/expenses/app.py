@@ -12,6 +12,9 @@ from .service import (
     get_expenses_for_trip,
     update_expense,
     delete_expense,
+    TripNotFoundError,
+    TripsServiceUnavailableError,
+    TripsServiceTimeoutError,
 )
 
 
@@ -102,6 +105,7 @@ def list_trip_expenses(trip_id):
     }), 200
 
 
+
 @app.post("/expenses")
 def add_expense():
     data = request.get_json(silent=True) or {}
@@ -130,8 +134,18 @@ def add_expense():
             "expense": expense_to_dict(created_expense)
         }), 201
 
+    except TripNotFoundError as error:
+        return jsonify({"error": str(error)}), 404
+
+    except TripsServiceTimeoutError as error:
+        return jsonify({"error": str(error)}), 504
+
+    except TripsServiceUnavailableError as error:
+        return jsonify({"error": str(error)}), 503
+
     except ValueError as error:
         return jsonify({"error": str(error)}), 400
+
 
 
 @app.put("/expenses/<int:expense_id>")

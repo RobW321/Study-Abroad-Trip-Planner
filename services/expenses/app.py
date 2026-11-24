@@ -4,7 +4,7 @@ import time
 
 from flask import Flask, jsonify, request, g
 
-from database.connection import initialize_database, get_connection
+from .database import get_connection
 from .model import Expense
 from .service import (
     create_expense,
@@ -61,26 +61,29 @@ def expense_to_dict(expense):
     }
 
 
-@app.get("/health")
-def health_check():
+@app.route("/health", methods=["GET"])
+def health():
     try:
         connection = get_connection()
-        connection.execute("SELECT 1")
-        connection.close()
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+        finally:
+            connection.close()
 
         return jsonify({
             "status": "healthy",
             "database": "connected",
-            "version": os.environ.get("SERVICE_VERSION", "dev"),
+            "version": "1.0.0"
         }), 200
 
     except Exception:
-        app.logger.exception("Database health check failed")
-
         return jsonify({
             "status": "unhealthy",
             "database": "disconnected",
-            "version": os.environ.get("SERVICE_VERSION", "dev"),
+            "version": "1.0.0"
         }), 503
 
 
@@ -191,8 +194,5 @@ def remove_expense(expense_id):
 
 
 if __name__ == "__main__":
-    initialize_database()
-
     port = int(os.environ.get("PORT", 5002))
-
     app.run(host="0.0.0.0", port=port)

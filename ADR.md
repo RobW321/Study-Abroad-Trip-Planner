@@ -73,3 +73,37 @@ Decision: Do not implement authentication or authorization in this version of th
 Alternatives considered: Implementing a user account system with authentication and authorization was considered, but it was rejected because it would introduce additional database structures, security concerns, and application complexity that are outside the primary scope of the assignment.
 
 Consequences: The application remains small and focused on its two required backend domains. This reduces implementation and security complexity while leaving authentication as a potential feature for a future version when the application is expanded or split into independently deployed services.
+
+
+**## [6]. Split the Application into Trips and Expenses Services**
+
+Date: 2026-11-24
+
+Status: Decided
+
+Context: The original application operated as a single Flask application with trip-planning and expense-tracking functionality. Assignment 2 required the application to be separated into independently deployable services while preserving the existing domain responsibilities. The main architectural question was where to establish the service boundary and how the two domains would communicate without sharing application code or directly accessing each other's databases.
+
+Decision: Split the application into two backend services: a Trips service and an Expenses service. The Trips service owns trip-related operations and data, while the Expenses service owns expense-related operations and data. The service boundary remains between the two domains, consistent with the original separation established in ADR-2. The existing domain seam held so there was no need to move it. Communication across the boundary also occurs through HTTP APIs. For example, when an expense is created, the Expenses service sends an HTTP request to the Trips service to verify that the referenced trip exists. The Expenses service does not directly access the Trips database. The Trips service does not directly access the Expenses database.
+
+Alternatives considered: Keeping both domains inside one Flask application was considered, but this would not provide independent deployment or runtime isolation. Another option was allowing both services to share a database, but this would create unnecessary coupling and weaken the separation between the domains. A message broker was also considered as a possible communication mechanism, but direct HTTP communication was simpler and sufficient for the synchronous validation required by the application.
+
+Consequences: Each service can be developed, tested, deployed, and operated independently. The service boundary introduces network-related failure possibilities, so outbound HTTP requests require timeouts and error handling. If the Trips service is unavailable, the Expenses service returns an appropriate error rather than creating an expense without validating its trip. This preserves the domain responsibilities while reducing direct coupling between the services.
+
+
+**## [7]. Separate Databases and Introduce Versioned Migrations**
+
+Date: 2026-11-24
+
+Status: Decided
+
+Context: The original application stored both trips and expenses in a single SQLite database. Splitting the application into independent services meant that each service needed ownership of its own persistent data. This required moving the existing data into separate databases while preserving existing records and maintaining the relationship between expenses and trips across the service boundary.
+
+Decision: Give the Trips service exclusive ownership of a TripsDB database and the Expenses service exclusive ownership of an ExpensesDB database. Both databases use SQL Server, with separate database logins and credentials. Existing records are migrated from the original SQLite database using dedicated import scripts that preserve record IDs and existing values.
+
+Each service manages its schema through versioned SQL migration files. A schema_migrations table records which migrations have already been applied, preventing migrations from being repeatedly executed during application startup. The Trips database includes a second migration that adds a nullable notes column to the existing trips table without dropping or recreating existing records. The database split removes the original database-level foreign key relationship between expenses and trips. Instead, the Expenses service maintains the trip_id reference and validates that the referenced trip exists by calling the Trips service over HTTP before creating an expense. The Expenses database does not contain a foreign key referencing the Trips database.
+
+For recovery from a failed migration, the affected service should be stopped and the database backed up or snapshotted before recovery work begins. If a migration fails, its transaction should be rolled back and its version should not be recorded as successfully applied. If an already-applied migration causes a problem, restore the affected database from a backup taken before that migration, correct the issue, and apply a new or corrected migration. After recovery, verify the schema, migration history, and existing records before restarting the service.
+
+Alternatives considered: Keeping a shared database would have preserved the original foreign key relationship, but it would prevent each service from having independent database ownership. Replacing the original tables instead of migrating them was rejected because it could result in data loss. Application startup schema creation was also rejected in favor of explicit, versioned migrations because migrations provide a controlled and traceable way to evolve the database.
+
+Consequences: Each service now controls its own database, credentials, and schema changes. This improves service independence and prevents one service from directly accessing the other service's data. However, referential integrity between trips and expenses is no longer enforced by a database foreign key. The HTTP validation performed by the Expenses service compensates for this loss when creating expenses, although it cannot provide the same guarantees as a cross-domain database transaction. Versioned migrations, preserved record IDs, and database backups provide a repeatable approach to schema changes and recovery.

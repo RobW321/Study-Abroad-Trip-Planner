@@ -208,3 +208,30 @@ Accepted
 
 Flask creates HTTP routes that call the application's servic layer. PORT is what lets the runtime choose the server port while 0.0.0.0 allows the application to accept connections from outside the local machine.
 As for the plannet budget, a trip stores a planned budget (how much the user expects to spend), while expenses store the actual spending. The application layer subtracts the actual expenses from the planned budget to calculate the remaining budget. 
+
+---
+
+**## 9. SQL Server Database Separation and Service Communication**
+
+**Commit:** 33db58c and 472c8ab
+**Tool:** ChatGPT
+
+**Prompt**
+
+Help migrate the Trips and Expenses services from a shared SQLite database to separate SQL Server databases. Implement versioned migrations, preserve existing records, and update Expenses to validate trips through HTTP communication with Trips.
+
+**Disposition**
+
+Accepted
+
+**What changed and why (if modified):**
+
+Both services were migrated to independent SQL Server databases, TripsDB and ExpensesDB, with separate database credentials. Each service received its own database connection module, versioned migrations, migration runner, and legacy data import script. Existing record IDs and data were preserved. The Trips database also received a migration adding a nullable notes column.
+
+The Expenses service now calls the Trips API to verify a trip exists before creating an expense. HTTP timeouts and error handling were added for missing trips and service outages. Dockerfiles were created with the dependencies needed for SQL Server connectivity.
+
+**How this works (in my own words):**
+
+Each service reads its DATABASE_URL environment variable to connect to its own SQL Server database using pyodbc. Migration files define schema changes, while the migration runner tracks applied versions in a schema_migrations table to prevent migrations from running more than once.
+
+The import scripts transfer existing SQLite records while preserving their IDs. Since the services no longer share a database, expenses service cannot use a foreign key to verify trips. Instead, it sends an HTTP request to Trips before inserting an expense. If the trip doesn't exist or Trips is unavailable, Expenses returns an appropriate error rather than creating an invalid record.

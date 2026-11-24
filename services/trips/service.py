@@ -1,75 +1,61 @@
-from database.connection import get_connection
+
+from .database import get_connection
 from .model import Trip
 
 
 def create_trip(trip):
     connection = get_connection()
 
-    cursor = connection.execute(
-        """
-        INSERT INTO trips (
-            name, destination, start_date, end_date, planned_budget
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO trips (
+                name, destination, start_date, end_date, planned_budget
+            )
+            OUTPUT INSERTED.id
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (
+                trip.name,
+                trip.destination,
+                trip.start_date,
+                trip.end_date,
+                trip.planned_budget,
+            ),
         )
-        VALUES (?, ?, ?, ?, ?)
-        """,
-        (
-            trip.name,
-            trip.destination,
-            trip.start_date,
-            trip.end_date,
-            trip.planned_budget,
-        ),
-    )
 
-    connection.commit()
-    trip.id = cursor.lastrowid
+        trip.id = cursor.fetchone()[0]
+        connection.commit()
 
-    connection.close()
+        return trip
 
-    return trip
+    finally:
+        connection.close()
 
 
 def get_trip(trip_id):
     connection = get_connection()
 
-    row = connection.execute(
-        """
-        SELECT id, name, destination, start_date, end_date, planned_budget
-        FROM trips
-        WHERE id = ?
-        """,
-        (trip_id,),
-    ).fetchone()
+    try:
+        cursor = connection.cursor()
 
-    connection.close()
+        cursor.execute(
+            """
+            SELECT id, name, destination, start_date, end_date, planned_budget
+            FROM trips
+            WHERE id = ?
+            """,
+            (trip_id,),
+        )
 
-    if row is None:
-        return None
+        row = cursor.fetchone()
 
-    return Trip(
-        id=row[0],
-        name=row[1],
-        destination=row[2],
-        start_date=row[3],
-        end_date=row[4],
-        planned_budget=row[5],
-    )
+        if row is None:
+            return None
 
-
-def get_all_trips():
-    connection = get_connection()
-
-    rows = connection.execute(
-        """
-        SELECT id, name, destination, start_date, end_date, planned_budget
-        FROM trips
-        """
-    ).fetchall()
-
-    connection.close()
-
-    return [
-        Trip(
+        return Trip(
             id=row[0],
             name=row[1],
             destination=row[2],
@@ -77,44 +63,86 @@ def get_all_trips():
             end_date=row[4],
             planned_budget=row[5],
         )
-        for row in rows
-    ]
+
+    finally:
+        connection.close()
+
+
+def get_all_trips():
+    connection = get_connection()
+
+    try:
+        cursor = connection.cursor()
+
+        cursor.execute(
+            """
+            SELECT id, name, destination, start_date, end_date, planned_budget
+            FROM trips
+            """
+        )
+
+        rows = cursor.fetchall()
+
+        return [
+            Trip(
+                id=row[0],
+                name=row[1],
+                destination=row[2],
+                start_date=row[3],
+                end_date=row[4],
+                planned_budget=row[5],
+            )
+            for row in rows
+        ]
+
+    finally:
+        connection.close()
 
 
 def update_trip(trip):
     connection = get_connection()
 
-    connection.execute(
-        """
-        UPDATE trips
-        SET name = ?, destination = ?, start_date = ?, end_date = ?,
-            planned_budget = ?
-        WHERE id = ?
-        """,
-        (
-            trip.name,
-            trip.destination,
-            trip.start_date,
-            trip.end_date,
-            trip.planned_budget,
-            trip.id,
-        ),
-    )
+    try:
+        cursor = connection.cursor()
 
-    connection.commit()
-    connection.close()
+        cursor.execute(
+            """
+            UPDATE trips
+            SET name = ?, destination = ?, start_date = ?, end_date = ?,
+                planned_budget = ?
+            WHERE id = ?
+            """,
+            (
+                trip.name,
+                trip.destination,
+                trip.start_date,
+                trip.end_date,
+                trip.planned_budget,
+                trip.id,
+            ),
+        )
+
+        connection.commit()
+
+    finally:
+        connection.close()
 
 
 def delete_trip(trip_id):
     connection = get_connection()
 
-    connection.execute(
-        """
-        DELETE FROM trips
-        WHERE id = ?
-        """,
-        (trip_id,),
-    )
+    try:
+        cursor = connection.cursor()
 
-    connection.commit()
-    connection.close()
+        cursor.execute(
+            """
+            DELETE FROM trips
+            WHERE id = ?
+            """,
+            (trip_id,),
+        )
+
+        connection.commit()
+
+    finally:
+        connection.close()

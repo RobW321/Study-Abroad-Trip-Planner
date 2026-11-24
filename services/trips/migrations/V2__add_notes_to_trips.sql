@@ -1,0 +1,2 @@
+ALTER TABLE trips
+ADD notes NVARCHAR(500) NULL;

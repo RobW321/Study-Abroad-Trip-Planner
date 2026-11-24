@@ -4,7 +4,7 @@ import time
 
 from flask import Flask, jsonify, request, g
 
-from database.connection import initialize_database, get_connection
+from .database import get_connection
 from .model import Trip
 from .service import (
     create_trip,
@@ -63,8 +63,13 @@ def trip_to_dict(trip):
 def health_check():
     try:
         connection = get_connection()
-        connection.execute("SELECT 1")
-        connection.close()
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute("SELECT 1")
+            cursor.fetchone()
+        finally:
+            connection.close()
 
         return jsonify({
             "status": "healthy",
@@ -178,8 +183,5 @@ def remove_trip(trip_id):
 
 
 if __name__ == "__main__":
-    initialize_database()
-
     port = int(os.environ.get("PORT", 5001))
-
     app.run(host="0.0.0.0", port=port)

@@ -7,3 +7,8 @@ data/*.db
 .DS_Store
 studytrip.db
 .coverage
+# Local environment variables
+.env
+
+# Local environment variables
+.env

@@ -1,0 +1,119 @@
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+  
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    environment:
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD}
+      TRIPS_DB_PASSWORD: ${TRIPS_DB_PASSWORD}
+      EXPENSES_DB_PASSWORD: ${EXPENSES_DB_PASSWORD}
+    volumes:
+      - ./db/init.sql:/scripts/init.sql:ro
+    entrypoint: ["/opt/mssql-tools18/bin/sqlcmd"]
+    command:
+      - "-S"
+      - "tcp:sqlserver,1433"
+      - "-U"
+      - "sa"
+      - "-P"
+      - "${MSSQL_SA_PASSWORD}"
+      - "-C"
+      - "-b"
+      - "-v"
+      - "TRIPS_DB_PASSWORD=${TRIPS_DB_PASSWORD}"
+      - "EXPENSES_DB_PASSWORD=${EXPENSES_DB_PASSWORD}"
+      - "-i"
+      - "/scripts/init.sql"
+    restart: "no"
+
+  trips:
+    build:
+      context: .
+      dockerfile: services/trips/Dockerfile
+    ports:
+      - "5001:5001"
+    environment:
+      DATABASE_URL: "sqlserver://trips_user:${TRIPS_DB_PASSWORD}@sqlserver:1433/TripsDB?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes"
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=3)"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  expenses:
+    build:
+      context: .
+      dockerfile: services/expenses/Dockerfile
+    ports:
+      - "5002:5002"
+    environment:
+      DATABASE_URL: "sqlserver://expenses_user:${EXPENSES_DB_PASSWORD}@sqlserver:1433/ExpensesDB?driver=ODBC+Driver+18+for+SQL+Server&TrustServerCertificate=yes"
+      TRIPS_URL: http://trips:5001
+    depends_on:
+      db-init:
+        condition: service_completed_successfully
+      trips:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:5002/health', timeout=3)"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  ui:
+    build:
+      context: ./ui
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      trips:
+        condition: service_healthy
+      expenses:
+        condition: service_healthy
+
+volumes:
+  sqlserver-data:
+    external: true
+    name: tripplanner-sql-data

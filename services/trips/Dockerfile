@@ -22,7 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY services/__init__.py ./services/__init__.py
 COPY services/trips/ ./services/trips/
-COPY database/ ./database/
 
 # Run as a non-root user
 RUN useradd --create-home appuser \

@@ -32,7 +32,7 @@ def validate_expense(expense):
 def create_expense(expense):
     validate_expense(expense)
 
-    trips_url = os.environ.get("TRIPS_URL")
+    trips_url = os.environ.get("TRIPS_URL", "http://trips:5001")
 
     if not trips_url:
         raise TripsServiceUnavailableError(

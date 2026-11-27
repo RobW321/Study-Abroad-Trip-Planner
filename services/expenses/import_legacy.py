@@ -5,7 +5,7 @@ from .database import get_connection
 
 
 def import_legacy_expenses():
-    legacy_path = os.environ["LEGACY_DB_PATH"]
+    legacy_path = os.environ.get("LEGACY_DB_PATH", "studytrip.db")
 
     # Open the original SQLite database in read-only mode.
     source = sqlite3.connect(

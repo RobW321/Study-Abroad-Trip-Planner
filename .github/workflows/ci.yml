@@ -3,9 +3,8 @@ name: CI
 
 on:
   push:
-    branches:
-      - main
-      - feature/**
+    - main
+    - feature/**
   pull_request:
     branches:
       - main
@@ -76,6 +75,107 @@ jobs:
 
       - name: Lint Expenses
         run: ruff check services/expenses
+
+  validate-specs:
+    name: Validate Architecture and API Specifications
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install validation tools
+        run: |
+          pip install pyyaml jsonschema openapi-spec-validator
+
+      - name: Validate system.yaml against JSON Schema
+        run: |
+          python - <<'PY'
+          import json
+          import yaml
+          from jsonschema import validate
+
+          with open("system.yaml", encoding="utf-8") as f:
+              system = yaml.safe_load(f)
+
+          with open("system.schema.json", encoding="utf-8") as f:
+              schema = json.load(f)
+
+          validate(instance=system, schema=schema)
+          print("SUCCESS: system.yaml matches system.schema.json")
+          PY
+
+      - name: Validate Trips OpenAPI specification
+        run: openapi-spec-validator services/trips/openapi.yaml
+
+      - name: Validate Expenses OpenAPI specification
+        run: openapi-spec-validator services/expenses/openapi.yaml
+
+
+  sast:
+    name: SAST - Semgrep
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep security scan
+        run: |
+          semgrep scan --error \
+            --config p/security-audit \
+            --config p/owasp-top-ten .
+
+  sca:
+    name: SCA - Snyk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Install Trips dependencies
+        run: pip install -r services/trips/requirements.txt
+
+      - name: Install Expenses dependencies
+        run: pip install -r services/expenses/requirements.txt
+
+      - name: Scan Trips dependencies
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          snyk test \
+            --file=services/trips/requirements.txt \
+            --package-manager=pip \
+            --severity-threshold=high
+
+      - name: Scan Expenses dependencies
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          snyk test \
+            --file=services/expenses/requirements.txt \
+            --package-manager=pip \
+            --severity-threshold=high
 
   docker-build:
     name: Build Docker Images

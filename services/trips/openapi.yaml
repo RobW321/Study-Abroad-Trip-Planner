@@ -1,0 +1,162 @@
+openapi: 3.0.3
+
+info:
+  title: Trips Service API
+  description: API for managing study-abroad trips.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:5001
+    description: Local development server
+
+paths:
+  /health:
+    get:
+      summary: Check service and database health
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Service and database are healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  database:
+                    type: string
+                    example: connected
+                  version:
+                    type: string
+                    example: dev
+        "503":
+          description: Database is unavailable
+
+  /trips:
+    get:
+      summary: List all trips
+      operationId: listTrips
+      responses:
+        "200":
+          description: List of trips
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  trips:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Trip"
+
+    post:
+      summary: Create a trip
+      operationId: createTrip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripInput"
+      responses:
+        "201":
+          description: Trip created successfully
+        "400":
+          description: Missing or invalid trip data
+
+  /trips/{trip_id}:
+    parameters:
+      - name: trip_id
+        in: path
+        required: true
+        schema:
+          type: integer
+
+    get:
+      summary: Retrieve a trip
+      operationId: getTrip
+      responses:
+        "200":
+          description: Trip found
+        "404":
+          description: Trip does not exist
+
+    put:
+      summary: Update a trip
+      operationId: updateTrip
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TripUpdate"
+      responses:
+        "200":
+          description: Trip updated successfully
+        "400":
+          description: Invalid trip data
+        "404":
+          description: Trip does not exist
+
+    delete:
+      summary: Delete a trip
+      operationId: deleteTrip
+      responses:
+        "200":
+          description: Trip deleted successfully
+        "404":
+          description: Trip does not exist
+
+components:
+  schemas:
+    Trip:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        destination:
+          type: string
+        start_date:
+          type: string
+        end_date:
+          type: string
+        planned_budget:
+          type: number
+
+    TripInput:
+      type: object
+      required:
+        - name
+        - destination
+        - start_date
+        - end_date
+        - planned_budget
+      properties:
+        name:
+          type: string
+        destination:
+          type: string
+        start_date:
+          type: string
+        end_date:
+          type: string
+        planned_budget:
+          type: number
+
+    TripUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        destination:
+          type: string
+        start_date:
+          type: string
+        end_date:
+          type: string
+        planned_budget:
+          type: number

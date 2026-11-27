@@ -1,0 +1,83 @@
+
+# yaml-language-server: $schema=./system.schema.json
+student: rjwon.exstudents2026
+prefix: rjwon-exstudents2026
+public_url: https://REPLACE-WITH-YOUR-DEPLOYED-UI-URL
+
+ui:
+  path: ui
+  storage_account: rjwonexstudents2026ui
+  calls:
+    - trips
+    - expenses
+
+azure:
+  resource_group: rg-rjwon-exstudents2026
+  container_apps_environment: rjwon-exstudents2026-env
+  sql_server: rjwon-exstudents2026-sql
+  registry: ghcr.io/REPLACE-WITH-YOUR-GITHUB-USERNAME
+
+services:
+  trips:
+    description: Manages study-abroad trips and their details.
+    path: services/trips
+    openapi: services/trips/openapi.yaml
+    port_default: 5001
+    health: /health
+    migrations: services/trips/migrations
+    env:
+      PORT:
+        default: 5001
+        description: Port the Trips service listens on.
+      DATABASE_URL:
+        secret: true
+        description: Connection string for the Trips service's own database.
+      SERVICE_VERSION:
+        default: dev
+        description: Service version returned by the health endpoint.
+      UI_ORIGIN:
+        default: http://localhost:8080
+        description: Allowed browser origin for the frontend.
+      LEGACY_DB_PATH:
+        default: studytrip.db
+        description: Path to the legacy SQLite database used by the import script.
+    azure:
+      container_app: rjwon-exstudents2026-trips
+      sql_database: rjwon-exstudents2026-trips-db
+
+  expenses:
+    description: Manages expenses associated with study-abroad trips.
+    path: services/expenses
+    openapi: services/expenses/openapi.yaml
+    port_default: 5002
+    health: /health
+    migrations: services/expenses/migrations
+    env:
+      PORT:
+        default: 5002
+        description: Port the Expenses service listens on.
+      DATABASE_URL:
+        secret: true
+        description: Connection string for the Expenses service's own database.
+      TRIPS_URL:
+        default: http://trips:5001
+        description: Base URL of the Trips service.
+      UI_ORIGIN:
+        default: http://localhost:8080
+        description: Allowed browser origin for the frontend.
+      LEGACY_DB_PATH:
+        default: studytrip.db
+        description: Path to the legacy SQLite database used by the import script.
+    calls:
+      - service: trips
+        url_env: TRIPS_URL
+        endpoints:
+          - GET /trips/{trip_id}
+        timeout_s: 5
+        on_failure: >
+          If the trip does not exist, return 404. If the Trips service is
+          unavailable, return 503. If the request times out, return 504.
+          The expense is not created when validation fails.
+    azure:
+      container_app: rjwon-exstudents2026-expenses
+      sql_database: rjwon-exstudents2026-expenses-db

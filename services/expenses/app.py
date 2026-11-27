@@ -1,22 +1,21 @@
-import os
 import logging
+import os
 import time
 
-from flask import Flask, jsonify, request, g
+from flask import Flask, g, jsonify, request
 
 from .database import get_connection
 from .model import Expense
 from .service import (
+    TripNotFoundError,
+    TripsServiceTimeoutError,
+    TripsServiceUnavailableError,
     create_expense,
+    delete_expense,
     get_expense,
     get_expenses_for_trip,
     update_expense,
-    delete_expense,
-    TripNotFoundError,
-    TripsServiceUnavailableError,
-    TripsServiceTimeoutError,
 )
-
 
 app = Flask(__name__)
 
@@ -79,7 +78,7 @@ def health():
             "version": "1.0.0"
         }), 200
 
-    except Exception:
+    except Exception:  # noqa: BLE001 — health check must handle database failures
         return jsonify({
             "status": "unhealthy",
             "database": "disconnected",
@@ -194,5 +193,5 @@ def remove_expense(expense_id):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5002))
+    port = int(os.environ.get("PORT", "5002"))
     app.run(host="0.0.0.0", port=port)

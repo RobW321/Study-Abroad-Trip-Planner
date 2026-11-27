@@ -1,19 +1,18 @@
-import os
 import logging
+import os
 import time
 
-from flask import Flask, jsonify, request, g
+from flask import Flask, g, jsonify, request
 
 from .database import get_connection
 from .model import Trip
 from .service import (
     create_trip,
-    get_trip,
-    get_all_trips,
-    update_trip,
     delete_trip,
+    get_all_trips,
+    get_trip,
+    update_trip,
 )
-
 
 app = Flask(__name__)
 
@@ -183,5 +182,5 @@ def remove_trip(trip_id):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5001))
+    port = int(os.environ.get("PORT", "5001"))
     app.run(host="0.0.0.0", port=port)

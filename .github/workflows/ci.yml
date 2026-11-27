@@ -1,0 +1,92 @@
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - feature/**
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  trips-tests:
+    name: Trips Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unixodbc-dev
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r services/trips/requirements.txt
+          pip install pytest pytest-cov ruff
+
+      - name: Run Trips tests with coverage
+        run: |
+          python -m pytest services/trips/tests \
+            --cov=services.trips \
+            --cov-report=term-missing \
+            --cov-fail-under=70
+
+      - name: Lint Trips
+        run: ruff check services/trips
+
+  expenses-tests:
+    name: Expenses Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y unixodbc-dev
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r services/expenses/requirements.txt
+          pip install pytest pytest-cov ruff
+
+      - name: Run Expenses tests with coverage
+        run: |
+          python -m pytest services/expenses/tests \
+            --cov=services.expenses \
+            --cov-report=term-missing \
+            --cov-fail-under=70
+
+      - name: Lint Expenses
+        run: ruff check services/expenses
+
+  docker-build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Trips image
+        run: docker build -f services/trips/Dockerfile -t trips-service .
+
+      - name: Build Expenses image
+        run: docker build -f services/expenses/Dockerfile -t expenses-service .
